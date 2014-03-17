@@ -22,6 +22,8 @@ class InventoryDatabase(object):
         @__db:  Database containing products and their IDs
         """
         self.__db = self.openConnection()
+        self.__db.text_factory = str
+        self.createInventory()
         
     def openConnection(self):
         """
@@ -43,11 +45,10 @@ class InventoryDatabase(object):
         index (primary key), name, and ID.
         """
         try:
-            self.__db.execute("CREATE TABLE inventory(index INTEGER PRIMARY KEY, name TEXT UNIQUE, id TEXT UNIQUE)")
+            self.__db.execute("CREATE TABLE inventory(id INTEGER PRIMARY KEY, name TEXT UNIQUE, code TEXT UNIQUE)")
         except sqlite3.OperationalError as e:
             self.__db.rollback()
             logging.error('OperationalError({0}): Database rolled back'.format(e))
-            raise
         else:
             self.__db.commit()
             logging.info('Table "inventory" created')
@@ -56,14 +57,14 @@ class InventoryDatabase(object):
         """
         Read a row from the inventory database by building a query 
         according to specified values
-        
+        AQ
         @param col:    Column to read from
         @param filter: Column to filter results by
         @param value:  Actual value to filter by
         @return:       Returns the row that meets the specified query
         """
         cursor = self.__db.cursor()
-        query = "SELECT {0} FROM inventory WHERE {2}=?".format(col, filter)
+        query = "SELECT {0} FROM inventory WHERE {1}=?".format(col, filter)
         cursor.execute(query, (value,))
         row = cursor.fetchone()
         return row
@@ -76,7 +77,7 @@ class InventoryDatabase(object):
         @return:   Return the latest product name selected from the database
                    according to the specified filter.
         """
-        return self.__readFromInventory('name', 'id', ID)
+        return self.__readFromInventory('name', 'code', ID)
         
     def readID(self, name):
         """
@@ -96,7 +97,7 @@ class InventoryDatabase(object):
         """
         cursor = self.__db.cursor()
         try:
-            cursor.execute("INSERT INTO inventory(product, code) VALUES(?, ?)", product)
+            cursor.execute("INSERT INTO inventory(name, code) VALUES(?, ?)", product)
         except sqlite3.IntegrityError as e:
             self.__db.rollback()
             logging.error('IntegrityError({0}): Database rolled back'.format(e))
